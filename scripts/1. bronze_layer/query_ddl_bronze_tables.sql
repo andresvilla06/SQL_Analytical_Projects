@@ -1,6 +1,7 @@
 /*	DATAWAREHOUSE Proyect 1
 
 	--Bronze Layer--
+
 	1. Here we are creating and adding the types to the columns of the tables
 */
 -------------------------------------------------------------------------------------
