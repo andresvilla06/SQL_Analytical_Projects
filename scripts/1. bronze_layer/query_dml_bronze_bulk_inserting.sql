@@ -1,6 +1,7 @@
 /*	DATAWAREHOUSE Proyect 1
 
 	--Bronze Layer--
+
 	1. Here we are gonna insert the data in the columns created. 
 	2. In the WITH clause is for specifying the rows, delimatetors, locked it.
 	3. And before bulking the INSERT we need to truncate the TABLE to avoid re-inserting
