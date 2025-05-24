@@ -12,7 +12,7 @@
 	
 	--TABLE 1
 
---CREATE VIEW gold.dim_customers AS
+CREATE VIEW gold.dim_customers AS
 SELECT
 	ROW_NUMBER() OVER (ORDER BY cci.cst_id) AS "customer_key",
 	cci.cst_id AS "customer_id",
@@ -36,7 +36,7 @@ LEFT JOIN silver.erp_loc_a101 AS ela
 
 	--TABLE 2
 
---CREATE VIEW gold.dim_products AS
+CREATE VIEW gold.dim_products AS
 SELECT 
 	ROW_NUMBER() OVER (ORDER BY cpi.prd_start_dt, cpi.prd_key) AS "product_key",
 	cpi.prd_id AS "product_id",
@@ -59,7 +59,7 @@ WHERE cpi.prd_end_dt IS NULL
 
 	--TABLE 3
 
---CREATE VIEW gold.fact_sales AS
+CREATE VIEW gold.fact_sales AS
 SELECT
 	csd.sls_ord_num AS "order_number",
 	gdc.customer_key,
@@ -75,32 +75,3 @@ LEFT JOIN gold.dim_customers AS gdc
 	ON csd.sls_cust_id = gdc.customer_id
 left JOIN gold.dim_products AS gdp
 	ON csd.sls_prd_key = gdp.product_number
-
-
-
-	-------------------------
-
-
-SELECT * FROM gold.dim_products
-SELECT * FROM gold.dim_customers
-SELECT * FROM gold.fact_sales
-
-SELECT
-	gs.order_number,
-	gs.customer_key,
-	gs.product_key,
-	gs.order_date,
-	gs.shipping_date,
-	gs.due_date,
-	gs.sales,
-	gs.quantity,
-	gs.price,
-	gp.category,
-	gc.first_name,
-	gc.country
-FROM gold.fact_sales AS gs
-LEFT JOIN gold.dim_customers AS gc
-	ON gs.customer_key = gc.customer_key
-LEFT JOIN gold.dim_products AS gp
-	ON gs.product_key = gp.product_key
-ORDER BY gs.customer_key
