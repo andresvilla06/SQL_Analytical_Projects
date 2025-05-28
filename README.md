@@ -1,4 +1,4 @@
-# Data WareHouse and Analytics Proyect
+# SQL Analiticals Proyects
 
 Welcome to my first **DataWarehouse Proyect** 
 
