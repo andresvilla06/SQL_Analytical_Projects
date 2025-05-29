@@ -16,7 +16,7 @@ Part IV (Part to whole analysis)
 Part V (Data Segmentation) 
 	1. Its to convert a measure to a dimension to do a comparasion with other measure
 	
-Part VI ()
+Part VI (Reporting)
 	1.
 */
 
@@ -169,9 +169,100 @@ SELECT
 FROM products_cost_range
 GROUP BY cost_range
 ORDER BY total_products DESC;
+
 ---
 
+WITH total_lifespan AS (
+	SELECT 
+		fs.customer_key,
+		CONCAT(dc.first_name,' ', dc.last_name) AS "full_name",
+		SUM(fs.sales) AS "total_customer_sales",
+		DATEDIFF(MONTH, MIN(order_date), MAX(order_date)) AS "lifespan"
+	FROM gold.fact_sales fs
+	LEFT JOIN gold.dim_customers dc
+		ON fs.customer_key = dc.customer_key
+	GROUP BY fs.customer_key, CONCAT(dc.first_name,' ', dc.last_name)
+	
+)
+, total_tag_customer AS (
+SELECT
+	*,
+	CASE WHEN total_customer_sales > 5000 AND lifespan >= 12 THEN 'VIP'
+		 WHEN total_customer_sales <= 5000 AND lifespan >= 12 THEN 'Regular'
+		 ELSE 'New'
+	END AS "tag_customer"
+FROM total_lifespan
 
+)
 
+SELECT tag_customer, COUNT(customer_key) AS "total_customers" 
+FROM total_tag_customer
+GROUP BY tag_customer
+ORDER BY total_customers
 ---------------------------------------------------------------------------
+
 --VI
+CREATE VIEW gold.report_customers as 
+WITH general_information AS ( --1st CTE
+	SELECT 
+		fs.order_number,
+		fs.product_key,
+		fs.order_date,
+		fs.sales,
+		fs.quantity,
+		dc.customer_key,
+		dc.customer_number,
+		CONCAT(dc.first_name,' ', dc.last_name) AS "full_name",
+		DATEDIFF(YEAR, birthday_date, GETDATE()) AS "years_old"
+	FROM gold.fact_sales fs
+	LEFT JOIN gold.dim_customers dc
+		ON fs.customer_key = dc.customer_key
+	WHERE order_date IS NOT NULL
+)
+, customer_agregations AS ( --2nd CTE
+SELECT
+    customer_key,
+    customer_number,
+    full_name,
+    years_old,
+    COUNT(DISTINCT order_number) AS total_orders,
+    SUM(sales) AS total_customer_sales,
+    SUM(quantity) AS total_quantity,
+    COUNT(DISTINCT product_key) AS total_products,
+    MAX(order_date) AS last_order_date,
+    DATEDIFF(month, MIN(order_date), MAX(order_date)) AS lifespan
+FROM general_information
+GROUP BY
+	 customer_key,
+	 customer_number,
+	 full_name,
+	 years_old
+)
+
+SELECT 
+	customer_key,
+    customer_number,
+    full_name,
+    years_old,
+	CASE WHEN years_old < 20 THEN 'Adolescene'
+		 WHEN years_old BETWEEN 20 AND 29 THEN 'Young'
+		 WHEN years_old BETWEEN 30 AND 59 THEN 'Mature'
+		 WHEN years_old >= 60 THEN 'Advance Age'
+		 ELSE 'No age aggregated'
+	END AS "years_tag",
+	CASE WHEN total_customer_sales > 5000 AND lifespan >= 12 THEN 'VIP'
+		 WHEN total_customer_sales <= 5000 AND lifespan >= 12 THEN 'Regular'
+		 ELSE 'New'
+	END AS "tag_customer",
+    total_orders,
+    total_customer_sales,
+    total_quantity,
+    total_products,
+    last_order_date,
+	DATEDIFF(MONTH, last_order_date, GETDATE()) AS "recency",
+    lifespan,
+	NULLIF(total_customer_sales / total_orders, 0) AS "avg_order_value",
+	CASE WHEN lifespan = 0 THEN total_customer_sales
+		 ELSE total_customer_sales / lifespan
+	END AS "avg_monthly_spend"
+FROM customer_agregations 
